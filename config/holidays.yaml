@@ -1,0 +1,40 @@
+# NSE trading holidays (India), current year + next year.
+# IMPORTANT: fixed-date holidays (Republic Day, Independence Day, Gandhi Jayanti) are
+# reliable; lunar/festival-based holidays (Holi, Ram Navami, Eid, Diwali, Ganesh
+# Chaturthi, etc.) are ESTIMATED here and MUST be cross-checked against the official
+# NSE trading-holiday circular (nseindia.com) before this pipeline is used for anything
+# beyond plumbing/dev testing. Update this file every year.
+
+holidays_2026:
+  - "2026-01-26"  # Republic Day
+  - "2026-03-04"  # Holi
+  - "2026-03-26"  # Ram Navami
+  - "2026-03-31"  # Idul Fitr
+  - "2026-04-01"  # Annual Bank Closing (exchange holiday, verify)
+  - "2026-04-14"  # Dr. Baba Saheb Ambedkar Jayanti
+  - "2026-05-01"  # Maharashtra Day
+  - "2026-08-15"  # Independence Day
+  - "2026-08-26"  # Ganesh Chaturthi
+  - "2026-10-02"  # Gandhi Jayanti
+  - "2026-10-20"  # Dussehra
+  - "2026-11-08"  # Diwali Laxmi Pujan (muhurat trading, exchange closed for normal session)
+  - "2026-11-09"  # Diwali Balipratipada
+  - "2026-11-24"  # Guru Nanak Jayanti
+  - "2026-12-25"  # Christmas
+
+holidays_2027:
+  - "2027-01-26"  # Republic Day
+  - "2027-02-21"  # Holi
+  - "2027-03-15"  # Ram Navami
+  - "2027-03-20"  # Idul Fitr
+  - "2027-04-01"  # Annual Bank Closing (exchange holiday, verify)
+  - "2027-04-14"  # Dr. Baba Saheb Ambedkar Jayanti
+  - "2027-05-01"  # Maharashtra Day
+  - "2027-08-15"  # Independence Day (falls Sunday, listed for completeness)
+  - "2027-08-16"  # Ganesh Chaturthi (approx.)
+  - "2027-10-02"  # Gandhi Jayanti
+  - "2027-10-09"  # Dussehra (approx.)
+  - "2027-10-28"  # Diwali Laxmi Pujan (approx., verify)
+  - "2027-10-29"  # Diwali Balipratipada (approx.)
+  - "2027-11-14"  # Guru Nanak Jayanti (approx.)
+  - "2027-12-25"  # Christmas

@@ -1,0 +1,17 @@
+pandas
+numpy
+PyYAML
+python-dateutil
+tzdata
+python-dotenv
+yfinance
+gnews
+newspaper3k
+lxml
+torch
+transformers
+sentence-transformers
+scikit-learn
+joblib
+APScheduler
+pytest
