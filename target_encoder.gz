@@ -1,0 +1,42 @@
+2026-07-24 12:15:26 | WARNING  | energy.prediction.model_registry | Model lstm_torch/Open (torch) uses an UNVERIFIED feature reconstruction -- see prediction/feature_engineering.py module docstring
+2026-07-24 12:15:26 | WARNING  | energy.prediction.model_registry | Model lstm_torch/Close (torch) uses an UNVERIFIED feature reconstruction -- see prediction/feature_engineering.py module docstring
+2026-07-24 12:15:26 | ERROR    | energy.prediction.model_registry | Prediction failed for model lstm_keras/Open (keras) on RELIANCE.NS
+Traceback (most recent call last):
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 175, in predict_one
+    model = self._get_model(spec)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 163, in _get_model
+    return self._registry.get_or_create(spec.registry_key, factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\utils\cache.py", line 42, in get_or_create
+    self._store[key] = factory()
+                       ^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 160, in factory
+    return _load_keras(path)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 126, in _load_keras
+    import tensorflow as tf  # lazy: heavy dependency
+    ^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'tensorflow'
+2026-07-24 12:15:26 | ERROR    | energy.prediction.model_registry | Prediction failed for model lstm_keras/Close (keras) on RELIANCE.NS
+Traceback (most recent call last):
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 175, in predict_one
+    model = self._get_model(spec)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 163, in _get_model
+    return self._registry.get_or_create(spec.registry_key, factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\utils\cache.py", line 42, in get_or_create
+    self._store[key] = factory()
+                       ^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 160, in factory
+    return _load_keras(path)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\dhaneshmistry\Desktop\News Sentiment Pipeline\prediction\model_registry.py", line 126, in _load_keras
+    import tensorflow as tf  # lazy: heavy dependency
+    ^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'tensorflow'
+2026-07-24 12:18:23 | WARNING  | energy.prediction.model_registry | Model lstm_torch/Open (torch) uses an UNVERIFIED feature reconstruction -- see prediction/feature_engineering.py module docstring
+2026-07-24 12:18:23 | WARNING  | energy.prediction.model_registry | Model lstm_torch/Close (torch) uses an UNVERIFIED feature reconstruction -- see prediction/feature_engineering.py module docstring
+2026-07-24 12:18:33 | WARNING  | energy.prediction.model_registry | Model lstm_keras/Open (keras) uses an UNVERIFIED feature reconstruction -- see prediction/feature_engineering.py module docstring
+2026-07-24 12:18:34 | WARNING  | energy.prediction.model_registry | Model lstm_keras/Close (keras) uses an UNVERIFIED feature reconstruction -- see prediction/feature_engineering.py module docstring
