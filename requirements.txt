@@ -8,10 +8,12 @@ yfinance
 gnews
 newspaper3k
 lxml
+lxml_html_clean
 torch
 transformers
 sentence-transformers
 scikit-learn
+tensorflow
 joblib
 APScheduler
 pytest

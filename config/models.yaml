@@ -1,0 +1,84 @@
+# Multi-model registry. Every entry is one trained artifact the pipeline will
+# run a prediction through for a given target ("open" or "close"); every entry
+# produces its own row in prediction_history.csv (see utils.constants
+# PREDICTION_COLUMNS -- Model_Name is part of the row key). Paths are relative to
+# paths.models_dir (see config/settings.yaml).
+#
+# `feature_set` names are resolved in prediction/feature_engineering.py's
+# FEATURE_SETS dict. `feature_builder` picks which function builds the feature
+# row: "engineered" (default) uses the rolling-history engineered_v1 family;
+# "stock_news_row" uses the same-day-only stock_news_v1 family. `input_scaler_file`
+# is applied (via .transform()) to a sklearn/xgboost model's feature vector before
+# .predict(); `target_scaler_file` is applied (via .inverse_transform(), on the
+# FULL output vector before output_index selects a column) to convert a model's
+# raw output back into real price units; `output_index` is set when one model
+# call returns multiple targets at once (e.g. stock_news_rf_model predicts
+# [Open, Close] together). `unverified: true` marks models whose exact input
+# feature composition, output order, or (for stock_news_rf) target scaler could
+# not be fully recovered from the artifact file itself -- see
+# prediction/feature_engineering.py's module docstring for what that means in
+# practice. A runtime warning is logged every time an `unverified` model
+# produces a prediction.
+
+models:
+  - name: stock_news_rf
+    target: open
+    backend: sklearn
+    file: pkl/stock_news_rf_model.pkl
+    feature_set: stock_news_v1
+    feature_builder: stock_news_row
+    input_scaler_file: pkl/stock_news_scaler.pkl
+    target_scaler_file: pkl/stock_news_target_scaler_approx.pkl
+    output_index: 0   # assumed Open -- see caveat below
+    unverified: true
+
+  - name: stock_news_rf
+    target: close
+    backend: sklearn
+    file: pkl/stock_news_rf_model.pkl
+    feature_set: stock_news_v1
+    feature_builder: stock_news_row
+    input_scaler_file: pkl/stock_news_scaler.pkl
+    target_scaler_file: pkl/stock_news_target_scaler_approx.pkl
+    output_index: 1   # assumed Close -- see caveat below
+    unverified: true
+
+  # CAVEATS on stock_news_rf:
+  # 1. It's a single MultiOutputRegressor producing 2 outputs per call. The 14
+  #    INPUT features and their order are fully confirmed from
+  #    stock_news_scaler.pkl's own feature_names_in_ -- not a guess. What's NOT
+  #    stored anywhere in the pickle is which of the 2 outputs is Open vs.
+  #    Close; output_index 0=Open, 1=Close is assumed from the natural
+  #    Open-before-Close convention used throughout this codebase's own feature
+  #    naming. If your training script ordered targets the other way, just
+  #    swap the two output_index values above.
+  # 2. Its raw output isn't in real price units (confirmed: realistic inputs
+  #    produce outputs like -4.6, which no real stock price is), meaning the
+  #    target was scaled before training, but no target scaler was provided
+  #    and the original training data isn't available to fit one exactly.
+  #    pkl/stock_news_target_scaler_approx.pkl (built by
+  #    scripts/generate_stock_news_target_scaler.py) is an APPROXIMATION: it
+  #    borrows News_Day_Open/Close's mean+std from the INPUT scaler (fit on
+  #    the same training data) as stand-ins for Next_Day_Open/Close's real
+  #    mean+std, reasoning that "next day's price" and "today's price" are the
+  #    same time series shifted by one row and should have nearly identical
+  #    population statistics. Replace this file with the real training-time
+  #    target scaler if you ever obtain the original training script.
+
+  - name: lstm_keras
+    target: open
+    backend: keras
+    file: keras/stock_lstm.keras
+    feature_set: engineered_v1_keras_open
+    sequence_length: 15
+    target_scaler_file: keras/target_scaler.gz
+    unverified: true
+
+  - name: lstm_keras
+    target: close
+    backend: keras
+    file: keras/stock_lstm_close.keras
+    feature_set: engineered_v1_keras_close
+    sequence_length: 15
+    target_scaler_file: keras/target_scaler_close.gz
+    unverified: true
