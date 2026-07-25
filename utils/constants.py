@@ -93,22 +93,29 @@ DAILY_COLUMNS = [
 ]
 
 # --- Prediction outputs ------------------------------------------------------
+#
+# Long/tidy format: one row per (Ticker, News_Date, Model_Name, Target), so every
+# model declared in config/models.yaml gets its own stored prediction rather than
+# a single wide "the" Open/Close pair. Target is the string "Open" or "Close".
 
 PREDICTION_COLUMNS = [
     "Ticker",
     "Company",
     "News_Date",
-    "Predicted_Open",
-    "Predicted_Close",
+    "Model_Name",
+    "Backend",
+    "Target",
+    "Predicted_Value",
     "Last_Close",
-    "Actual_Open",
-    "Actual_Close",
-    "Model_Version",
+    "Actual_Value",
+    "Unverified",
     "Predicted_At",
 ]
 
 PERFORMANCE_COLUMNS = [
     "Ticker",
+    "Model_Name",
+    "Target",
     "Evaluated_At",
     "N_Samples",
     "MAE",

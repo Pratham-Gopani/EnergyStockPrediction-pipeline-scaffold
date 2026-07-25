@@ -27,8 +27,9 @@ from news.article_extractor import ArticleExtractor
 from news.deduplicator import dedupe_articles
 from news.google_news import GoogleNewsScraper
 from nlp.adaptive_threshold import DEFAULT_V_REF, ThresholdParams
+from prediction.feature_engineering import ticker_code_map
 from prediction.history import PredictionHistory
-from prediction.inference import PredictionEngine
+from prediction.model_registry import ModelRunner
 from prediction.postprocessing import sanitize_prediction, to_prediction_row
 from utils.config_loader import get_config
 from utils.constants import ARTICLE_COLUMNS, DAILY_COLUMNS, OHLCV_COLUMNS
@@ -82,15 +83,23 @@ class Pipeline:
         self.article_dataset_builder = ArticleDatasetBuilder(self.config)
         self.exporter = DatasetExporter(self.config)
         self.prediction_history = PredictionHistory(self.exporter)
-        self._prediction_engine: PredictionEngine | None = None
+        self.model_runner = ModelRunner(self.config)
+        self._ticker_codes = ticker_code_map(self._companies())
 
     def _companies(self) -> list[dict]:
         return self.config.get("companies.companies") or []
 
-    def _get_prediction_engine(self) -> PredictionEngine:
-        if self._prediction_engine is None:
-            self._prediction_engine = PredictionEngine(self.config)
-        return self._prediction_engine
+    def _load_daily_history(self, ticker: str) -> pd.DataFrame:
+        """Every previously-persisted daily row for this ticker (from
+        dataset_daily.csv), sorted ascending by News_Date -- the history the
+        multi-model registry needs for rolling/sequence features.
+        """
+        daily_path = self.config.output_file("daily_file")
+        if not daily_path.exists():
+            return pd.DataFrame(columns=DAILY_COLUMNS)
+        full_history = pd.read_csv(daily_path)
+        ticker_history = full_history[full_history["Ticker"] == ticker]
+        return ticker_history.sort_values("News_Date").reset_index(drop=True)
 
     def _fetch_histories(self, companies: list[dict]) -> dict[str, pd.DataFrame]:
         histories: dict[str, pd.DataFrame] = {}
@@ -201,7 +210,6 @@ class Pipeline:
         daily_rows: list[dict] = []
         prediction_rows: list[dict] = []
         company_errors: dict[str, str] = {}
-        engine: PredictionEngine | None = None
 
         for result in results:
             ticker = result["ticker"]
@@ -229,19 +237,24 @@ class Pipeline:
             daily_rows.append(daily_row)
 
             try:
-                engine = engine or self._get_prediction_engine()
-                prediction = engine.predict(daily_row)
-                sanitized = sanitize_prediction(prediction, daily_row.get("Close"))
-                prediction_rows.append(
-                    to_prediction_row(
-                        sanitized,
-                        company=daily_row.get("Company"),
-                        news_date=daily_row.get("News_Date"),
-                        last_close=daily_row.get("Close"),
-                        model_version=engine.preprocessor.model_version(),
-                        predicted_at=now_ist(),
-                    )
+                prior_history = self._load_daily_history(ticker)
+                combined_history = pd.concat(
+                    [prior_history, pd.DataFrame([daily_row])], ignore_index=True
                 )
+                model_predictions = self.model_runner.predict_all(combined_history, ticker, self._ticker_codes)
+                for model_prediction in model_predictions:
+                    sanitized = sanitize_prediction(model_prediction, daily_row.get("Close"))
+                    prediction_rows.append(
+                        to_prediction_row(
+                            sanitized,
+                            company=daily_row.get("Company"),
+                            news_date=daily_row.get("News_Date"),
+                            last_close=daily_row.get("Close"),
+                            predicted_at=now_ist(),
+                        )
+                    )
+                if not model_predictions:
+                    logger.warning("No model produced a prediction for %s", ticker)
             except Exception as exc:  # noqa: BLE001 - a bad model/features shouldn't kill the run
                 logger.exception("Prediction failed for %s", ticker)
                 company_errors[ticker] = f"prediction failed: {exc}"

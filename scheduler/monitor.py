@@ -1,7 +1,8 @@
-"""Post-inference monitoring pass: join prediction_history.csv (which has
-Predicted_Open/Close) against dataset_daily.csv (which has the realised OHLCV for
-that date, once the market has closed) on Ticker + News_Date, back-fill
-Actual_Open/Actual_Close, and hand each ticker's joined history to
+"""Post-inference monitoring pass: join prediction_history.csv (long format --
+one row per Ticker/News_Date/Model_Name/Target) against dataset_daily.csv (which
+has the realised Open/Close for that date, once the market has closed) on
+Ticker + News_Date + Target, back-fill Actual_Value, and hand each
+(ticker, model_name, target) group's joined history to
 prediction.evaluator.ModelMonitor to compute + persist realised accuracy metrics.
 """
 
@@ -22,6 +23,18 @@ def _load_csv(path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def _melt_actuals(daily_df: pd.DataFrame) -> pd.DataFrame:
+    """dataset_daily.csv has one Open and one Close column per row; predictions
+    are long-format (one Target per row), so melt Open/Close into matching
+    Target="Open"/"Close" rows before joining.
+    """
+    open_actuals = daily_df[["Ticker", "News_Date", "Open"]].rename(columns={"Open": "Actual_Value"})
+    open_actuals["Target"] = "Open"
+    close_actuals = daily_df[["Ticker", "News_Date", "Close"]].rename(columns={"Close": "Actual_Value"})
+    close_actuals["Target"] = "Close"
+    return pd.concat([open_actuals, close_actuals], ignore_index=True)
+
+
 def run_monitoring(config=None) -> dict:
     config = config or get_config()
     predictions_path = config.output_file("predictions_file")
@@ -34,12 +47,9 @@ def run_monitoring(config=None) -> dict:
         logger.info("Skipping monitoring: predictions or daily dataset is empty")
         return {}
 
-    daily_actuals = daily_df[["Ticker", "News_Date", "Open", "Close"]].rename(
-        columns={"Open": "Actual_Open", "Close": "Actual_Close"}
-    )
-
-    merged = predictions_df.drop(columns=["Actual_Open", "Actual_Close"], errors="ignore").merge(
-        daily_actuals, on=["Ticker", "News_Date"], how="inner"
+    actuals = _melt_actuals(daily_df)
+    merged = predictions_df.drop(columns=["Actual_Value"], errors="ignore").merge(
+        actuals, on=["Ticker", "News_Date", "Target"], how="inner"
     )
 
     if merged.empty:
@@ -47,12 +57,12 @@ def run_monitoring(config=None) -> dict:
         return {}
 
     monitor = ModelMonitor(config)
-    results: dict[str, dict] = {}
-    for ticker, group in merged.groupby("Ticker"):
+    results: dict[tuple, dict] = {}
+    for (ticker, model_name, target), group in merged.groupby(["Ticker", "Model_Name", "Target"]):
         try:
-            results[ticker] = monitor.evaluate(ticker, group)
-        except Exception:  # noqa: BLE001 - one ticker's evaluation failure shouldn't block others
-            logger.exception("Monitoring evaluation failed for %s", ticker)
+            results[(ticker, model_name, target)] = monitor.evaluate(ticker, model_name, target, group)
+        except Exception:  # noqa: BLE001 - one group's evaluation failure shouldn't block others
+            logger.exception("Monitoring evaluation failed for %s/%s/%s", ticker, model_name, target)
 
-    logger.info("Monitoring complete for %d ticker(s)", len(results))
+    logger.info("Monitoring complete for %d (ticker, model, target) group(s)", len(results))
     return results

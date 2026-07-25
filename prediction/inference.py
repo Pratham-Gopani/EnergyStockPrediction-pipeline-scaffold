@@ -1,5 +1,13 @@
 """Loads the pretrained Open/Close regression models (cached via ModelRegistry)
 and runs inference on a preprocessed feature vector.
+
+NOTE: this single-model scaler->PCA->model path is the original scaffold's generic
+plumbing example (paired with scripts/generate_dummy_models.py). The pipeline's
+actual production prediction path -- covering the multiple uploaded Ridge/
+RandomForest/XGBoost/PyTorch-LSTM/Keras-LSTM models -- is
+prediction.model_registry.ModelRunner, driven by config/models.yaml. This module
+is kept as a minimal single-model reference/fallback, not wired into
+scheduler.tasks.
 """
 
 from __future__ import annotations
